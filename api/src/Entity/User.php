@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -31,6 +33,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    /**
+     * @var Collection<int, Server>
+     */
+    #[ORM\OneToMany(targetEntity: Server::class, mappedBy: 'user')]
+    private Collection $servers;
+
+    public function __construct()
+    {
+        $this->servers = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -111,5 +124,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // @deprecated, to be removed when upgrading to Symfony 8
+    }
+
+    /**
+     * @return Collection<int, Server>
+     */
+    public function getServers(): Collection
+    {
+        return $this->servers;
+    }
+
+    public function addServer(Server $server): static
+    {
+        if (!$this->servers->contains($server)) {
+            $this->servers->add($server);
+            $server->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeServer(Server $server): static
+    {
+        if ($this->servers->removeElement($server)) {
+            // set the owning side to null (unless already changed)
+            if ($server->getUser() === $this) {
+                $server->setUser(null);
+            }
+        }
+
+        return $this;
     }
 }
